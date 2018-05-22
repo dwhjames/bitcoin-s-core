@@ -60,7 +60,7 @@ trait NumberGenerator {
   def byte: Gen[Byte] = arbitrary[Byte]
 
   /** Generates a 100 byte sequence */
-  def bytes: Gen[Seq[Byte]] = for {
+  def bytes: Gen[scodec.bits.ByteVector] = for {
     num <- Gen.choose(0, 100)
     b <- bytes(num)
   } yield b
@@ -70,7 +70,7 @@ trait NumberGenerator {
    * @param num
    * @return
    */
-  def bytes(num: Int): Gen[Seq[Byte]] = Gen.listOfN(num, byte)
+  def bytes(num: Int): Gen[scodec.bits.ByteVector] = Gen.listOfN(num, byte)
 
   /** Generates a random boolean */
   def bool: Gen[Boolean] = for {
@@ -78,12 +78,12 @@ trait NumberGenerator {
   } yield num == 1
 
   /** Generates a bit vector */
-  def bitVector: Gen[Seq[Boolean]] = for {
+  def bitVector: Gen[scodec.bits.BitVector] = for {
     vector <- Gen.listOfN(8, bool)
   } yield vector
 
   /** Generates a sequence of bit vectors */
-  def bitVectors: Gen[Seq[Seq[Boolean]]] = for {
+  def bitVectors: Gen[Seq[scodec.bits.BitVector]] = for {
     num <- Gen.choose(0, 100)
     vectors <- Gen.listOfN(num, bitVector)
   } yield vectors

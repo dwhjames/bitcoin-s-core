@@ -13,7 +13,7 @@ sealed trait HashType {
 }
 
 object HashType extends Factory[HashType] {
-  def fromBytes(bytes: Seq[Byte]): HashType = {
+  def fromBytes(bytes: scodec.bits.ByteVector): HashType = {
     val num = Int32(bytes)
     fromNumber(num)
   }
@@ -67,7 +67,7 @@ object HashType extends Factory[HashType] {
   lazy val hashTypes = Seq(sigHashAll, sigHashNone, sigHashSingle, sigHashAnyoneCanPay,
     sigHashNoneAnyoneCanPay, sigHashAllAnyoneCanPay, sigHashSingleAnyoneCanPay)
 
-  lazy val hashTypeBytes: Seq[Byte] = Seq(sigHashAllByte, sigHashSingleByte, sigHashNoneByte, sigHashAnyoneCanPayByte,
+  lazy val hashTypeBytes: scodec.bits.ByteVector = Seq(sigHashAllByte, sigHashSingleByte, sigHashNoneByte, sigHashAnyoneCanPayByte,
     sigHashNoneAnyoneCanPayByte, sigHashSingleAnyoneCanPayByte, sigHashAllAnyoneCanPayByte)
   def apply(num: Int32): HashType = fromNumber(num)
 

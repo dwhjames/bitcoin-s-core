@@ -14,7 +14,7 @@ import scala.util.Try
 sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
 
   /** Parses a list of bytes into a list of script tokens */
-  def fromBytes(bytes: Seq[Byte]): List[ScriptToken] = {
+  def fromBytes(bytes: scodec.bits.ByteVector): List[ScriptToken] = {
     val scriptTokens: List[ScriptToken] = parse(bytes)
     scriptTokens
   }
@@ -43,7 +43,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
    */
   private def parse(str: String): List[ScriptToken] = {
     @tailrec
-    def loop(operations: List[String], accum: List[Byte]): List[Byte] = {
+    def loop(operations: List[String], accum: scodec.bits.ByteVector): scodec.bits.ByteVector = {
       /*      logger.debug("Attempting to parse: " + operations.headOption)
       logger.debug("Accum: " + accum)*/
       operations match {
@@ -54,7 +54,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
           if (strippedQuotes.size == 0) {
             loop(t, OP_0.bytes.toList ++ accum)
           } else {
-            val bytes: Seq[Byte] = BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(strippedQuotes.getBytes.toList))
+            val bytes: scodec.bits.ByteVector = BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(strippedQuotes.getBytes.toList))
 
             val bytesToPushOntoStack: List[ScriptToken] = (bytes.size > 75) match {
               case true =>
@@ -120,9 +120,9 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
    * Parses a byte array into a the asm operations for a script
    * will throw an exception if it fails to parse a op code
    */
-  private def parse(bytes: List[Byte]): List[ScriptToken] = {
+  private def parse(bytes: scodec.bits.ByteVector): List[ScriptToken] = {
     @tailrec
-    def loop(bytes: List[Byte], accum: List[ScriptToken]): List[ScriptToken] = {
+    def loop(bytes: scodec.bits.ByteVector, accum: List[ScriptToken]): List[ScriptToken] = {
       //logger.debug("Byte to be parsed: " + bytes.headOption)
       bytes match {
         case h :: t =>
@@ -136,7 +136,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
 
   }
 
-  private def parse(bytes: Seq[Byte]): List[ScriptToken] = parse(bytes.toList)
+  private def parse(bytes: scodec.bits.ByteVector): List[ScriptToken] = parse(bytes.toList)
 
   /** Parses a redeem script from the given script token */
   def parseRedeemScript(scriptToken: ScriptToken): Try[List[ScriptToken]] = {
@@ -180,13 +180,13 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
   private sealed case class ParsingHelper[T](tail: List[T], accum: List[ScriptToken])
 
   /**
-   * Parses an operation if the tail is a List[Byte]
+   * Parses an operation if the tail is a scodec.bits.ByteVector
    * If the operation is a bytesToPushOntoStack, it pushes the number of bytes onto the stack
    * specified by the bytesToPushOntoStack
    * i.e. If the operation was BytesToPushOntoStackImpl(5), it would slice 5 bytes off of the tail and
    * places them into a ScriptConstant and add them to the accumulator.
    */
-  private def parseOperationByte(op: ScriptOperation, accum: List[ScriptToken], tail: List[Byte]): ParsingHelper[Byte] = {
+  private def parseOperationByte(op: ScriptOperation, accum: List[ScriptToken], tail: scodec.bits.ByteVector): ParsingHelper[Byte] = {
     op match {
       case bytesToPushOntoStack: BytesToPushOntoStack =>
         //logger.debug("Parsing operation byte: " +bytesToPushOntoStack )
@@ -211,7 +211,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
    * @param tail the bytes to be parsed still
    * @return
    */
-  private def parseOpPushData(op: ScriptOperation, accum: List[ScriptToken], tail: List[Byte]): ParsingHelper[Byte] = {
+  private def parseOpPushData(op: ScriptOperation, accum: List[ScriptToken], tail: scodec.bits.ByteVector): ParsingHelper[Byte] = {
 
     def parseOpPushDataHelper(numBytes: Int): ParsingHelper[Byte] = {
       //next numBytes is the size of the script constant
@@ -248,7 +248,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
    * @return
    */
   private def buildParsingHelper(op: ScriptOperation, bytesToPushOntoStack: ScriptConstant,
-    scriptConstant: ScriptConstant, restOfBytes: List[Byte], accum: List[ScriptToken]): ParsingHelper[Byte] = {
+    scriptConstant: ScriptConstant, restOfBytes: scodec.bits.ByteVector, accum: List[ScriptToken]): ParsingHelper[Byte] = {
     if (bytesToPushOntoStack.hex == "00") {
       //if we need to push 0 bytes onto the stack we do not add the script constant
       ParsingHelper[Byte](

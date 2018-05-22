@@ -40,7 +40,7 @@ trait ScriptNumberUtil {
    * @param bytes
    * @return
    */
-  def toInt(bytes: Seq[Byte]): Int = {
+  def toInt(bytes: scodec.bits.ByteVector): Int = {
     require(bytes.size <= 4, "We cannot have an integer with more than 4 bytes (32 bits)")
     toLong(bytes).toInt
   }
@@ -54,7 +54,7 @@ trait ScriptNumberUtil {
    * @param bytes
    * @return
    */
-  def toLong(bytes: Seq[Byte]): Long = {
+  def toLong(bytes: scodec.bits.ByteVector): Long = {
     val reversedBytes = bytes.reverse
     if (bytes.size == 1 && bytes.head == -128) {
       //the case for negative zero
@@ -77,7 +77,7 @@ trait ScriptNumberUtil {
    * @param bytes
    * @return
    */
-  def isPositive(bytes: Seq[Byte]): Boolean = {
+  def isPositive(bytes: scodec.bits.ByteVector): Boolean = {
     if (bytes.isEmpty) false
     else {
       val result: Int = bytes(bytes.size - 1) & 0x80
@@ -92,19 +92,19 @@ trait ScriptNumberUtil {
    * @param bytes
    * @return
    */
-  def changeSignBitToPositive(bytes: Seq[Byte]): Seq[Byte] = {
+  def changeSignBitToPositive(bytes: scodec.bits.ByteVector): scodec.bits.ByteVector = {
     val newByte: Byte = (bytes.head & 0x7F).toByte
     (newByte :: bytes.tail.toList)
   }
 
-  def firstByteAllZeros(bytes: Seq[Byte]): Boolean = {
+  def firstByteAllZeros(bytes: scodec.bits.ByteVector): Boolean = {
     val lastByte = bytes.head
     (lastByte & 0xFF) == 0
   }
 
-  private def parseLong(bytes: Seq[Byte]): Long = parseLong(bytes.toList)
+  private def parseLong(bytes: scodec.bits.ByteVector): Long = parseLong(bytes.toList)
 
-  private def parseLong(bytes: List[Byte]): Long = parseLong(BitcoinSUtil.encodeHex(bytes))
+  private def parseLong(bytes: scodec.bits.ByteVector): Long = parseLong(BitcoinSUtil.encodeHex(bytes))
 
   private def parseLong(hex: String): Long = java.lang.Long.parseLong(hex, 16)
 
@@ -127,7 +127,7 @@ trait ScriptNumberUtil {
     }
   }
 
-  def toByteSeq(long: Long): Seq[Byte] = BigInt(long).toByteArray
+  def toByteSeq(long: Long): scodec.bits.ByteVector = BigInt(long).toByteArray
 
   /**
    * Determines if a given hex string is a positive number
@@ -139,15 +139,15 @@ trait ScriptNumberUtil {
 
   def isNegative(hex: String): Boolean = isNegative(BitcoinSUtil.decodeHex(hex))
 
-  def isNegative(bytes: Seq[Byte]): Boolean = {
+  def isNegative(bytes: scodec.bits.ByteVector): Boolean = {
     if (bytes.isEmpty) false else !isPositive(bytes)
   }
 
-  def changeSignBitToPositive(hex: String): Seq[Byte] = changeSignBitToPositive(BitcoinSUtil.decodeHex(hex))
+  def changeSignBitToPositive(hex: String): scodec.bits.ByteVector = changeSignBitToPositive(BitcoinSUtil.decodeHex(hex))
 
-  def changeSignBitToNegative(hex: String): Seq[Byte] = changeSignBitToNegative(BitcoinSUtil.decodeHex(hex))
+  def changeSignBitToNegative(hex: String): scodec.bits.ByteVector = changeSignBitToNegative(BitcoinSUtil.decodeHex(hex))
 
-  def changeSignBitToNegative(bytes: Seq[Byte]): Seq[Byte] = {
+  def changeSignBitToNegative(bytes: scodec.bits.ByteVector): scodec.bits.ByteVector = {
     val newByte = (bytes.head | 0x80).toByte
     (newByte :: bytes.tail.toList)
   }

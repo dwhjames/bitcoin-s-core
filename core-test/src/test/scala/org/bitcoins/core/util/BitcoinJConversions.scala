@@ -48,7 +48,7 @@ trait BitcoinjConversions {
    * @param connectedScript
    * @return
    */
-  def signatureSerialization(tx: org.bitcoinj.core.Transaction, inputIndex: Int, connectedScript: Seq[Byte], sigHashType: Byte): String = {
+  def signatureSerialization(tx: org.bitcoinj.core.Transaction, inputIndex: Int, connectedScript: scodec.bits.ByteVector, sigHashType: Byte): String = {
     val params = TestNet3Params.get
     try {
       import org.bitcoinj.core._
@@ -105,7 +105,7 @@ trait BitcoinjConversions {
         //tx.outputs = new util.ArrayList[TransactionOutput](tx.getOutputs.subList(0, inputIndex + 1))
         tx.clearOutputs()
         for { i <- 0 until inputIndex } {
-          tx.addOutput(new org.bitcoinj.core.TransactionOutput(params, tx, Coin.NEGATIVE_SATOSHI, List[Byte]().toArray))
+          tx.addOutput(new org.bitcoinj.core.TransactionOutput(params, tx, Coin.NEGATIVE_SATOSHI, scodec.bits.ByteVector().toArray))
         }
         // The signature isn't broken by new versions of the transaction issued by other parties.
         for { i <- 0 until tx.getInputs.size } {
@@ -147,7 +147,7 @@ trait BitcoinjConversions {
    * @param bytes
    * @return
    */
-  def publicKey(bytes: Seq[Byte]): ECKey = ECKey.fromPublicOnly(bytes.toArray)
+  def publicKey(bytes: scodec.bits.ByteVector): ECKey = ECKey.fromPublicOnly(bytes.toArray)
 
   /**
    * Helper function to create bitcoinj ECKey

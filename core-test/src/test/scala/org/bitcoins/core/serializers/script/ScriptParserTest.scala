@@ -47,7 +47,7 @@ class ScriptParserTest extends FlatSpec with MustMatchers {
   }
 
   it must "parse a p2pkh output script from a byte array to script tokens" in {
-    val bytes: Seq[Byte] = BitcoinSUtil.decodeHex(TestUtil.p2pkhOutputScript).tail
+    val bytes: scodec.bits.ByteVector = BitcoinSUtil.decodeHex(TestUtil.p2pkhOutputScript).tail
     ScriptParser.fromBytes(bytes) must be(TestUtil.p2pkhOutputScriptAsm)
   }
 

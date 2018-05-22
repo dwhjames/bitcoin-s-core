@@ -12,7 +12,7 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers {
   private val logger = BitcoinSLogger.logger
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val rawTxInput = "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000" + "6f0047304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f00125512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae" + "ffffffff"
-  val encode = BitcoinSUtil.encodeHex(_: Seq[Byte])
+  val encode = BitcoinSUtil.encodeHex(_: scodec.bits.ByteVector)
   "RawTransactionInputParser" must "parse a raw serialized transaction input" in {
     val txInput = RawTransactionInputParser.read(rawTxInput)
     txInput.previousOutput.vout must be(UInt32.zero)

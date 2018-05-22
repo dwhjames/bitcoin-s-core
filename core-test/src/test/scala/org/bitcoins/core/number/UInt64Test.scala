@@ -8,7 +8,7 @@ import org.scalatest.{ FlatSpec, MustMatchers }
 class UInt64Test extends FlatSpec with MustMatchers {
 
   "UInt64" must "hold the number 0" in {
-    val uInt64 = UInt64(Seq(0.toByte))
+    val uInt64 = UInt64(scodec.bits.ByteVector.low(1))
     uInt64.hex must be("0000000000000000")
     uInt64.toBigInt must be(0)
   }
@@ -21,7 +21,7 @@ class UInt64Test extends FlatSpec with MustMatchers {
 
   it must "hold the max for a uint32_t" in {
     //this is UInt32_t's max value
-    val uInt64 = UInt64(Seq(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+    val uInt64 = UInt64(scodec.bits.ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     uInt64.toBigInt must be(4294967295L)
   }
 
@@ -31,7 +31,7 @@ class UInt64Test extends FlatSpec with MustMatchers {
   }
 
   it must "hold the max number for uint64_t" in {
-    val uInt64 = UInt64(Seq(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte,
+    val uInt64 = UInt64(scodec.bits.ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte,
       0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     uInt64.toBigInt must be(BigInt("18446744073709551615"))
     uInt64.hex must be("ffffffffffffffff")

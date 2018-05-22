@@ -14,10 +14,10 @@ sealed abstract class RawSerializerHelper {
    * Used parse a byte sequence to a Seq[TransactionInput], Seq[TransactionOutput], etc
    * Makes sure that we parse the correct amount of elements
    */
-  def parseCmpctSizeUIntSeq[T <: NetworkElement](bytes: Seq[Byte], constructor: Seq[Byte] => T): (Seq[T], Seq[Byte]) = {
+  def parseCmpctSizeUIntSeq[T <: NetworkElement](bytes: scodec.bits.ByteVector, constructor: scodec.bits.ByteVector => T): (Seq[T], scodec.bits.ByteVector) = {
     val count = CompactSizeUInt.parse(bytes)
     val payload = bytes.splitAt(count.size.toInt)._2
-    def loop(accum: Seq[T], remaining: Seq[Byte]): (Seq[T], Seq[Byte]) = {
+    def loop(accum: Seq[T], remaining: scodec.bits.ByteVector): (Seq[T], scodec.bits.ByteVector) = {
       if (accum.size == count.num.toInt) {
         (accum.reverse, remaining)
       } else {
@@ -32,8 +32,8 @@ sealed abstract class RawSerializerHelper {
     (parsed, remaining)
   }
 
-  /** Writes a Seq[TransactionInput]/Seq[TransactionOutput]/Seq[Transaction] -> Seq[Byte] */
-  def writeCmpctSizeUInt[T](ts: Seq[T], serializer: T => Seq[Byte]): Seq[Byte] = {
+  /** Writes a Seq[TransactionInput]/Seq[TransactionOutput]/Seq[Transaction] -> scodec.bits.ByteVector */
+  def writeCmpctSizeUInt[T](ts: Seq[T], serializer: T => scodec.bits.ByteVector): scodec.bits.ByteVector = {
     val serialized = ts.flatMap(serializer(_))
     val cmpct = CompactSizeUInt(UInt64(ts.size))
     cmpct.bytes ++ serialized

@@ -9,7 +9,7 @@ sealed abstract class ECDigitalSignature {
 
   def hex: String = BitcoinSUtil.encodeHex(bytes)
 
-  def bytes: Seq[Byte]
+  def bytes: scodec.bits.ByteVector
 
   def isEmpty = bytes.isEmpty
 
@@ -61,9 +61,9 @@ case object DummyECDigitalSignature extends ECDigitalSignature {
 }
 
 object ECDigitalSignature extends Factory[ECDigitalSignature] {
-  private case class ECDigitalSignatureImpl(bytes: Seq[Byte]) extends ECDigitalSignature
+  private case class ECDigitalSignatureImpl(bytes: scodec.bits.ByteVector) extends ECDigitalSignature
 
-  override def fromBytes(bytes: Seq[Byte]): ECDigitalSignature = {
+  override def fromBytes(bytes: scodec.bits.ByteVector): ECDigitalSignature = {
     //this represents the empty signature
     if (bytes.size == 1 && bytes.head == 0x0) EmptyDigitalSignature
     else if (bytes.size == 0) EmptyDigitalSignature
@@ -89,8 +89,8 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
   def fromRS(r: BigInt, s: BigInt): ECDigitalSignature = {
     val rsSize = r.toByteArray.size + s.toByteArray.size
     val totalSize = 4 + rsSize
-    val bytes: Seq[Byte] = Seq(0x30.toByte, totalSize.toByte, 0x2.toByte, r.toByteArray.size.toByte) ++
-      r.toByteArray.toSeq ++ Seq(0x2.toByte, s.toByteArray.size.toByte) ++ s.toByteArray.toSeq
+    val bytes: scodec.bits.ByteVector = scodec.bits.ByteVector(0x30.toByte, totalSize.toByte, 0x2.toByte, r.toByteArray.size.toByte) ++
+      r.toByteArray.toSeq ++ scodec.bits.ByteVector(0x2.toByte, s.toByteArray.size.toByte) ++ s.toByteArray.toSeq
     fromBytes(bytes)
   }
 }

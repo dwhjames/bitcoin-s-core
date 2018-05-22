@@ -23,7 +23,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   /** Converts a sequence of script tokens to them to their byte values */
-  def asmToBytes(asm: Seq[ScriptToken]): Seq[Byte] = BitcoinSUtil.decodeHex(asmToHex(asm))
+  def asmToBytes(asm: Seq[ScriptToken]): scodec.bits.ByteVector = BitcoinSUtil.decodeHex(asmToHex(asm))
 
   /**
    * Filters out push operations in our sequence of script tokens
@@ -112,7 +112,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
    */
   def isPushOnly(script: Seq[ScriptToken]): Boolean = {
     @tailrec
-    def loop(tokens: Seq[ScriptToken], accum: List[Boolean]): Seq[Boolean] = tokens match {
+    def loop(tokens: Seq[ScriptToken], accum: List[Boolean]): scodec.bits.BitVector = tokens match {
       case h :: t => h match {
         case scriptOp: ScriptOperation => loop(t, (scriptOp.opCode < OP_16.opCode) :: accum)
         case _: ScriptToken => loop(t, true :: accum)
@@ -174,7 +174,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     } else throw new IllegalArgumentException("ScriptToken is to large for pushops, size: " + scriptTokenSize)
   }
 
-  def calculatePushOp(bytes: Seq[Byte]): Seq[ScriptToken] = calculatePushOp(ScriptConstant(bytes))
+  def calculatePushOp(bytes: scodec.bits.ByteVector): Seq[ScriptToken] = calculatePushOp(ScriptConstant(bytes))
 
   /**
    * Whenever a [[ScriptConstant]] is interpreted to a number BIP62 could enforce that number to be encoded
@@ -183,7 +183,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
    */
   def isShortestEncoding(constant: ScriptConstant): Boolean = isShortestEncoding(constant.bytes)
 
-  def isShortestEncoding(bytes: Seq[Byte]): Boolean = {
+  def isShortestEncoding(bytes: scodec.bits.ByteVector): Boolean = {
     // If the most-significant-byte - excluding the sign bit - is zero
     // then we're not minimal. Note how this test also rejects the
     // negative-zero encoding, 0x80.

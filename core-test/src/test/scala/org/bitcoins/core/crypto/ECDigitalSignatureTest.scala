@@ -44,7 +44,7 @@ class ECDigitalSignatureTest extends FlatSpec with MustMatchers {
 
   it must "create an empty digital signature when given 0 in hex or byte format" in {
     val hex = ECDigitalSignature("00")
-    val byte = ECDigitalSignature(Seq(0.toByte))
+    val byte = ECDigitalSignature(scodec.bits.ByteVector.low(1))
     val emptySignature = ECDigitalSignature("")
     byte must be(emptySignature)
     hex must be(emptySignature)

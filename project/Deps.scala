@@ -13,6 +13,7 @@ object Deps {
 
   object Compile {
     val bouncycastle = "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle
+    val scodec = "org.scodec" %% "scodec-bits" % "1.1.5"
     val slf4j = "org.slf4j" % "slf4j-api" % V.slf4j % "provided"
     val zeromq = "org.zeromq" % "jeromq" % V.zeromq
   }
@@ -28,6 +29,7 @@ object Deps {
 
   val core = List(
     Compile.bouncycastle,
+    Compile.scodec,
     Compile.slf4j
   )
 

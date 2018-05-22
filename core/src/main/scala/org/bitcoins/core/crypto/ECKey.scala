@@ -23,7 +23,7 @@ import scala.util.{ Failure, Success, Try }
  */
 sealed abstract class BaseECKey extends NetworkElement with Sign {
 
-  override def signFunction: Seq[Byte] => Future[ECDigitalSignature] = { bytes =>
+  override def signFunction: scodec.bits.ByteVector => Future[ECDigitalSignature] = { bytes =>
     import scala.concurrent.ExecutionContext.Implicits.global
     Future(sign(bytes))
   }
@@ -33,13 +33,13 @@ sealed abstract class BaseECKey extends NetworkElement with Sign {
    * @param signingKey the key to sign the bytes with
    * @return the digital signature
    */
-  private def sign(dataToSign: Seq[Byte], signingKey: BaseECKey): ECDigitalSignature = {
+  private def sign(dataToSign: scodec.bits.ByteVector, signingKey: BaseECKey): ECDigitalSignature = {
     require(dataToSign.length == 32 && signingKey.bytes.length <= 32)
     val signature = NativeSecp256k1.sign(dataToSign.toArray, signingKey.bytes.toArray)
-    ECDigitalSignature(signature)
+    ECDigitalSignature(scodec.bits.ByteVector(signature))
   }
 
-  override def sign(dataToSign: Seq[Byte]): ECDigitalSignature = sign(dataToSign, this)
+  override def sign(dataToSign: scodec.bits.ByteVector): ECDigitalSignature = sign(dataToSign, this)
 
   def sign(hash: HashDigest, signingKey: BaseECKey): ECDigitalSignature = sign(hash.bytes, signingKey)
 
@@ -48,7 +48,7 @@ sealed abstract class BaseECKey extends NetworkElement with Sign {
   def signFuture(hash: HashDigest)(implicit ec: ExecutionContext): Future[ECDigitalSignature] = Future(sign(hash))
 
   @deprecated("Deprecated in favor of signing algorithm inside of secp256k1", "2/20/2017")
-  private def oldSign(dataToSign: Seq[Byte], signingKey: BaseECKey): ECDigitalSignature = {
+  private def oldSign(dataToSign: scodec.bits.ByteVector, signingKey: BaseECKey): ECDigitalSignature = {
     val signer: ECDSASigner = new ECDSASigner(new HMacDSAKCalculator(new SHA256Digest()))
     val privKey: ECPrivateKeyParameters = new ECPrivateKeyParameters(
       new BigInteger(1, signingKey.bytes.toArray), CryptoParams.curve)
@@ -76,7 +76,7 @@ sealed abstract class ECPrivateKey extends BaseECKey {
 
   /** Derives the public for a the private key */
   def publicKey: ECPublicKey = {
-    val pubKeyBytes: Seq[Byte] = NativeSecp256k1.computePubkey(bytes.toArray, isCompressed)
+    val pubKeyBytes: scodec.bits.ByteVector = NativeSecp256k1.computePubkey(bytes.toArray, isCompressed)
     require(NativeSecp256k1.isValidPubKey(pubKeyBytes.toArray), "secp256k1 failed to generate a valid public key, got: " + BitcoinSUtil.encodeHex(pubKeyBytes))
     ECPublicKey(pubKeyBytes)
   }
@@ -89,7 +89,7 @@ sealed abstract class ECPrivateKey extends BaseECKey {
   def toWIF(network: NetworkParameters): String = {
     val networkByte = network.privateKey
     //append 1 byte to the end of the priv key byte representation if we need a compressed pub key
-    val fullBytes = if (isCompressed) networkByte ++ (bytes ++ Seq(1.toByte)) else networkByte ++ bytes
+    val fullBytes = if (isCompressed) networkByte ++ (bytes ++ scodec.bits.ByteVector(1)) else networkByte ++ bytes
     val hash = CryptoUtil.doubleSHA256(fullBytes)
     val checksum = hash.bytes.take(4)
     val encodedPrivKey = fullBytes ++ checksum
@@ -101,18 +101,18 @@ sealed abstract class ECPrivateKey extends BaseECKey {
 
 object ECPrivateKey extends Factory[ECPrivateKey] {
 
-  private case class ECPrivateKeyImpl(override val bytes: Seq[Byte], isCompressed: Boolean, ec: ExecutionContext) extends ECPrivateKey {
+  private case class ECPrivateKeyImpl(override val bytes: scodec.bits.ByteVector, isCompressed: Boolean, ec: ExecutionContext) extends ECPrivateKey {
     require(NativeSecp256k1.secKeyVerify(bytes.toArray), "Invalid key according to secp256k1, hex: " + BitcoinSUtil.encodeHex(bytes))
   }
 
-  def apply(bytes: Seq[Byte], isCompressed: Boolean)(implicit ec: ExecutionContext): ECPrivateKey = {
+  def apply(bytes: scodec.bits.ByteVector, isCompressed: Boolean)(implicit ec: ExecutionContext): ECPrivateKey = {
     ECPrivateKeyImpl(bytes, isCompressed, ec)
   }
 
-  override def fromBytes(bytes: Seq[Byte]): ECPrivateKey = fromBytes(bytes, true)
+  override def fromBytes(bytes: scodec.bits.ByteVector): ECPrivateKey = fromBytes(bytes, true)
 
   @tailrec
-  def fromBytes(bytes: Seq[Byte], isCompressed: Boolean): ECPrivateKey = {
+  def fromBytes(bytes: scodec.bits.ByteVector, isCompressed: Boolean): ECPrivateKey = {
 
     if (bytes.size == 32) ECPrivateKeyImpl(bytes, isCompressed, Implicits.global)
     else if (bytes.size < 32) {
@@ -169,8 +169,8 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
    * @param bytes private key in bytes
    * @return
    */
-  def isCompressed(bytes: Seq[Byte]): Boolean = {
-    val validCompressedBytes: Seq[Seq[Byte]] = Networks.secretKeyBytes
+  def isCompressed(bytes: scodec.bits.ByteVector): Boolean = {
+    val validCompressedBytes: Seq[scodec.bits.ByteVector] = Networks.secretKeyBytes
     val validCompressedBytesInHex: Seq[String] = validCompressedBytes.map(b => BitcoinSUtil.encodeHex(b))
     val firstByteHex = BitcoinSUtil.encodeHex(bytes.head)
     if (validCompressedBytesInHex.contains(firstByteHex)) bytes(bytes.length - 5) == 0x01.toByte
@@ -189,7 +189,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
    * @param WIF Wallet Import Format. Encoded in Base58
    * @return
    */
-  private def trimFunction(WIF: String): Seq[Byte] = {
+  private def trimFunction(WIF: String): scodec.bits.ByteVector = {
     val bytesChecked = Base58.decodeCheck(WIF)
 
     //see https://en.bitcoin.it/wiki/List_of_address_prefixes
@@ -232,7 +232,7 @@ sealed abstract class ECPublicKey extends BaseECKey {
   def verify(hash: HashDigest, signature: ECDigitalSignature): Boolean = verify(hash.bytes, signature)
 
   /** Verifies if a given piece of data is signed by the [[ECPrivateKey]]'s corresponding [[ECPublicKey]]. */
-  def verify(data: Seq[Byte], signature: ECDigitalSignature): Boolean = {
+  def verify(data: scodec.bits.ByteVector, signature: ECDigitalSignature): Boolean = {
     val result = NativeSecp256k1.verify(data.toArray, signature.bytes.toArray, bytes.toArray)
     if (!result) {
       //if signature verification fails with libsecp256k1 we need to use our old
@@ -250,7 +250,7 @@ sealed abstract class ECPublicKey extends BaseECKey {
   override def toString = "ECPublicKey(" + hex + ")"
 
   @deprecated("Deprecated in favor of using verify functionality inside of secp256k1", "2/20/2017")
-  private def oldVerify(data: Seq[Byte], signature: ECDigitalSignature): Boolean = {
+  private def oldVerify(data: scodec.bits.ByteVector, signature: ECDigitalSignature): Boolean = {
     /** The elliptic curve used by bitcoin. */
     def curve = CryptoParams.curve
     /** This represents this public key in the bouncy castle library */
@@ -286,7 +286,7 @@ sealed abstract class ECPublicKey extends BaseECKey {
 
 object ECPublicKey extends Factory[ECPublicKey] {
 
-  private case class ECPublicKeyImpl(override val bytes: Seq[Byte], ec: ExecutionContext) extends ECPublicKey {
+  private case class ECPublicKeyImpl(override val bytes: scodec.bits.ByteVector, ec: ExecutionContext) extends ECPublicKey {
     //unfortunately we cannot place ANY invariants here
     //because of old transactions on the blockchain that have weirdly formatted public keys. Look at example in script_tests.json
     //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_tests.json#L457
@@ -295,7 +295,7 @@ object ECPublicKey extends Factory[ECPublicKey] {
     //Eventually we would like this to be CPubKey::IsFullyValid() but since we are remaining backwards compatible
     //we cannot do this. If there ever is a hard fork this would be a good thing to add.
   }
-  override def fromBytes(bytes: Seq[Byte]): ECPublicKey = {
+  override def fromBytes(bytes: scodec.bits.ByteVector): ECPublicKey = {
     ECPublicKeyImpl(bytes, Implicits.global)
   }
 
@@ -309,11 +309,11 @@ object ECPublicKey extends Factory[ECPublicKey] {
    * Mimics this function in bitcoin core
    * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.cpp#L207-L212]]
    */
-  def isFullyValid(bytes: Seq[Byte]): Boolean = Try(NativeSecp256k1.isValidPubKey(bytes.toArray)).isSuccess && isValid(bytes)
+  def isFullyValid(bytes: scodec.bits.ByteVector): Boolean = Try(NativeSecp256k1.isValidPubKey(bytes.toArray)).isSuccess && isValid(bytes)
 
   /**
    * Mimics the CPubKey::IsValid function in Bitcoin core, this is a consensus rule
    * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.h#L158]]
    */
-  def isValid(bytes: Seq[Byte]): Boolean = bytes.nonEmpty
+  def isValid(bytes: scodec.bits.ByteVector): Boolean = bytes.nonEmpty
 }

@@ -18,9 +18,9 @@ sealed abstract class RawTransactionWitnessParser {
    * We can only tell how many [[ScriptWitness]]
    * we have if we have the number of inputs the transaction creates
    */
-  def read(bytes: Seq[Byte], numInputs: Int): TransactionWitness = {
+  def read(bytes: scodec.bits.ByteVector, numInputs: Int): TransactionWitness = {
     @tailrec
-    def loop(remainingBytes: Seq[Byte], remainingInputs: Int, accum: Seq[ScriptWitness]): Seq[ScriptWitness] = {
+    def loop(remainingBytes: scodec.bits.ByteVector, remainingInputs: Int, accum: Seq[ScriptWitness]): Seq[ScriptWitness] = {
       if (remainingInputs != 0) {
         val w = RawScriptWitnessParser.read(remainingBytes)
         val (_, newRemainingBytes) = remainingBytes.splitAt(w.bytes.size)
@@ -32,7 +32,7 @@ sealed abstract class RawTransactionWitnessParser {
     TransactionWitness(witnesses)
   }
 
-  def write(witness: TransactionWitness): Seq[Byte] = witness.witnesses.flatMap(_.bytes)
+  def write(witness: TransactionWitness): scodec.bits.ByteVector = witness.witnesses.flatMap(_.bytes)
 }
 
 object RawTransactionWitnessParser extends RawTransactionWitnessParser

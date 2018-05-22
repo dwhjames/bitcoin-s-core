@@ -193,7 +193,7 @@ class TransactionTest extends FlatSpec with MustMatchers {
     for {
       testCase <- testCases
     } yield {
-      val txInputValidity: Seq[Boolean] = for {
+      val txInputValidity: scodec.bits.BitVector = for {
         (outPoint, scriptPubKey, amountOpt) <- testCase.creditingTxsInfo
         tx = testCase.spendingTx
         (input, inputIndex) = findInput(tx, outPoint).getOrElse((EmptyTransactionInput, 0))

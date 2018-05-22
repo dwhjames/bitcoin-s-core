@@ -16,7 +16,7 @@ abstract class NetworkElement {
   def hex: String = BitcoinSUtil.encodeHex(bytes)
 
   /** The byte representation of the NetworkElement */
-  def bytes: Seq[Byte]
+  def bytes: scodec.bits.ByteVector
 
   lazy val logger = BitcoinSLogger.logger
 }

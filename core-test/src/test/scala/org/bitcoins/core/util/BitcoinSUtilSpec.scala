@@ -23,7 +23,7 @@ class BitcoinSUtilSpec extends Properties("BitcoinSUtilSpec") {
     }
 
   property("Convert a sequence of bit vectors to a sequence of bytes") =
-    Prop.forAll(NumberGenerator.bitVectors) { bitVectors: Seq[Seq[Boolean]] =>
+    Prop.forAll(NumberGenerator.bitVectors) { bitVectors: Seq[scodec.bits.BitVector] =>
       BitcoinSUtil.bytesToBitVectors(BitcoinSUtil.bitVectorsToBytes(bitVectors)) == bitVectors
 
     }

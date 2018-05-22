@@ -15,7 +15,7 @@ import scala.annotation.tailrec
  */
 sealed abstract class RawMerkleBlockSerializer extends RawBitcoinSerializer[MerkleBlock] {
 
-  def read(bytes: List[Byte]): MerkleBlock = {
+  def read(bytes: scodec.bits.ByteVector): MerkleBlock = {
     val blockHeader = RawBlockHeaderSerializer.read(bytes.take(80))
     val bytesAfterBlockHeaderParsing = bytes.slice(blockHeader.bytes.size, bytes.size)
     val transactionCount = UInt32(bytesAfterBlockHeaderParsing.slice(0, 4).reverse)
@@ -31,10 +31,10 @@ sealed abstract class RawMerkleBlockSerializer extends RawBitcoinSerializer[Merk
     MerkleBlock(blockHeader, transactionCount, hashes, matches)
   }
 
-  def write(merkleBlock: MerkleBlock): Seq[Byte] = {
+  def write(merkleBlock: MerkleBlock): scodec.bits.ByteVector = {
     val partialMerkleTree = merkleBlock.partialMerkleTree
     val bitVectors = parseToBytes(partialMerkleTree.bits)
-    val byteVectors: Seq[Byte] = BitcoinSUtil.bitVectorsToBytes(bitVectors)
+    val byteVectors: scodec.bits.ByteVector = BitcoinSUtil.bitVectorsToBytes(bitVectors)
     val flagCount = CompactSizeUInt(UInt64(Math.ceil(partialMerkleTree.bits.size.toDouble / 8).toInt))
     merkleBlock.blockHeader.bytes ++
       merkleBlock.transactionCount.bytes.reverse ++
@@ -48,10 +48,10 @@ sealed abstract class RawMerkleBlockSerializer extends RawBitcoinSerializer[Merk
    * @param hashCount the amount of tx hashes we need to parse from bytes
    * @return the sequence of tx hashes and the remaining bytes to be parsed into a MerkleBlockMessage
    */
-  private def parseTransactionHashes(bytes: Seq[Byte], hashCount: CompactSizeUInt): (Seq[DoubleSha256Digest], Seq[Byte]) = {
+  private def parseTransactionHashes(bytes: scodec.bits.ByteVector, hashCount: CompactSizeUInt): (Seq[DoubleSha256Digest], scodec.bits.ByteVector) = {
     @tailrec
-    def loop(remainingHashes: Long, remainingBytes: Seq[Byte],
-      accum: List[DoubleSha256Digest]): (Seq[DoubleSha256Digest], Seq[Byte]) = {
+    def loop(remainingHashes: Long, remainingBytes: scodec.bits.ByteVector,
+      accum: List[DoubleSha256Digest]): (Seq[DoubleSha256Digest], scodec.bits.ByteVector) = {
       if (remainingHashes <= 0) (accum.reverse, remainingBytes)
       else loop(remainingHashes - 1, remainingBytes.slice(32, remainingBytes.size), DoubleSha256Digest(remainingBytes.take(32)) :: accum)
     }
@@ -59,9 +59,9 @@ sealed abstract class RawMerkleBlockSerializer extends RawBitcoinSerializer[Merk
   }
 
   /** Parses a sequence of bits to a sequence of bit vectors grouped into bytes */
-  private def parseToBytes(bits: Seq[Boolean]): Seq[Seq[Boolean]] = {
+  private def parseToBytes(bits: scodec.bits.BitVector): Seq[scodec.bits.BitVector] = {
     @tailrec
-    def loop(remainingBits: Seq[Boolean], accum: Seq[Seq[Boolean]]): Seq[Seq[Boolean]] = remainingBits match {
+    def loop(remainingBits: scodec.bits.BitVector, accum: Seq[scodec.bits.BitVector]): Seq[scodec.bits.BitVector] = remainingBits match {
       case Nil => accum.reverse
       case h :: t => accum.headOption match {
         case None => loop(remainingBits, Nil +: accum)

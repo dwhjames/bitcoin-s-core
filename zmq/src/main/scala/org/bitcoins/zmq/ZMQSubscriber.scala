@@ -19,10 +19,10 @@ import org.zeromq.{ ZMQ, ZMsg }
  */
 class ZMQSubscriber(
   socket: InetSocketAddress,
-  hashTxListener: Option[Seq[Byte] => Unit],
-  hashBlockListener: Option[Seq[Byte] => Unit],
-  rawTxListener: Option[Seq[Byte] => Unit],
-  rawBlockListener: Option[Seq[Byte] => Unit]) {
+  hashTxListener: Option[scodec.bits.ByteVector => Unit],
+  hashBlockListener: Option[scodec.bits.ByteVector => Unit],
+  rawTxListener: Option[scodec.bits.ByteVector => Unit],
+  rawBlockListener: Option[scodec.bits.ByteVector => Unit]) {
   private val logger = BitcoinSLogger.logger
 
   private var running = true
@@ -95,7 +95,7 @@ class ZMQSubscriber(
    * Processes a message that we received the from the cryptocurrency daemon and then
    * applies the appropriate listener to that message.
    */
-  private def processMsg(topic: String, body: Seq[Byte]): Unit = {
+  private def processMsg(topic: String, body: scodec.bits.ByteVector): Unit = {
     val notification = ZMQNotification.fromString(topic)
     notification.foreach {
       case HashTx =>

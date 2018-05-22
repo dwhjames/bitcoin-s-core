@@ -29,11 +29,11 @@ sealed abstract class TransactionSignatureSerializer {
 
   /**
    * Implements the signature serialization algorithim that Satoshi Nakamoto originally created
-    * and the new signature serialization algorithm as specified by BIP143
+   * and the new signature serialization algorithm as specified by BIP143
    * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki]]
    * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
    */
-  def serializeForSignature(txSigComponent: TxSigComponent, hashType: HashType): Seq[Byte] = {
+  def serializeForSignature(txSigComponent: TxSigComponent, hashType: HashType): scodec.bits.ByteVector = {
     val spendingTransaction = txSigComponent.transaction
     val inputIndex = txSigComponent.inputIndex
     val output = txSigComponent.output
@@ -141,17 +141,17 @@ sealed abstract class TransactionSignatureSerializer {
         val inputIndexInt = inputIndex.toInt
         val emptyHash = CryptoUtil.emptyDoubleSha256Hash
 
-        val outPointHash: Seq[Byte] = if (isNotAnyoneCanPay) {
-          val bytes: Seq[Byte] = spendingTransaction.inputs.flatMap(_.previousOutput.bytes)
+        val outPointHash: scodec.bits.ByteVector = if (isNotAnyoneCanPay) {
+          val bytes: scodec.bits.ByteVector = spendingTransaction.inputs.flatMap(_.previousOutput.bytes)
           CryptoUtil.doubleSHA256(bytes).bytes
         } else emptyHash.bytes
 
-        val sequenceHash: Seq[Byte] = if (isNotAnyoneCanPay && isNotSigHashNone && isNotSigHashSingle) {
+        val sequenceHash: scodec.bits.ByteVector = if (isNotAnyoneCanPay && isNotSigHashNone && isNotSigHashSingle) {
           val bytes = spendingTransaction.inputs.flatMap(_.sequence.bytes)
           CryptoUtil.doubleSHA256(bytes).bytes
         } else emptyHash.bytes
 
-        val outputHash: Seq[Byte] = if (isNotSigHashSingle && isNotSigHashNone) {
+        val outputHash: scodec.bits.ByteVector = if (isNotSigHashSingle && isNotSigHashNone) {
           val bytes = spendingTransaction.outputs.flatMap(o => o.bytes)
           CryptoUtil.doubleSHA256(bytes).bytes
         } else if (HashType.isSIGHASH_SINGLE(hashType.num) && inputIndex < UInt32(spendingTransaction.outputs.size)) {
@@ -163,7 +163,7 @@ sealed abstract class TransactionSignatureSerializer {
         val scriptBytes = script.flatMap(_.bytes)
 
         val i = spendingTransaction.inputs(inputIndexInt)
-        val serializationForSig: Seq[Byte] = spendingTransaction.version.bytes.reverse ++ outPointHash ++ sequenceHash ++
+        val serializationForSig: scodec.bits.ByteVector = spendingTransaction.version.bytes.reverse ++ outPointHash ++ sequenceHash ++
           i.previousOutput.bytes ++ CompactSizeUInt.calc(scriptBytes).bytes ++
           scriptBytes ++ amount.bytes ++ i.sequence.bytes.reverse ++
           outputHash ++ spendingTransaction.lockTime.bytes.reverse ++ hashType.num.bytes.reverse
